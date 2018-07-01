@@ -4,7 +4,7 @@ from scipy.stats import invgamma
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 
-n = 1000
+n = 100
 data = rd.normal(10, 2, size=n)
 
 mean = 0
@@ -32,9 +32,9 @@ for t in params:
     mu1 = (m0 * mu0 + n * np.mean(data)) / (m0 + n)
     alpha1 = alpha0 + n
     # ここで正規分布から平均を生成
-    mean = rd.normal(mu1, t[1] / m1)
+    mean = rd.normal(mu1, t[1] / np.sqrt(m1))
     # これもハイパーパラメータの更新
-    beta1 = beta0 + n * np.std(data) + n * m0 * (mean - mu0) ** 2 / (n + m0)
+    beta1 = beta0 + n * np.std(data) + n * m0 * (np.mean(data) - mu0) ** 2 / (n + m0)
     # ここで逆ガンマ分布から分散を生成
     std = invgamma.rvs((alpha1 + 1) / 2.0)
     # 生成した値をスケーリング
@@ -49,17 +49,28 @@ for t in params:
     # カウントダウン
     cnt = cnt - 1
     
-# 結果の表示
-x = np.arange(11001)
+
 means = []
 stds = []
 for i in params:
     means.append(i[0])
     stds.append(i[1])
 
-x = x[burnin + 1:]
+
 means = means[burnin + 1:]
 stds = stds[burnin + 1:]
+
+# 事後分布からのデータ生成
+result = []
+for i in range(len(means)):
+    temp = rd.normal(means[i], stds[i])
+    result.append(temp)
+
+plt.hist(result)
+
+# 結果の表示
+x = np.arange(11001)
+x = x[burnin + 1:]
 print(np.mean(means))
 print(np.mean(stds))
 
@@ -86,3 +97,6 @@ print("|   std   |{:.2f}|{:.2f}|({:.2f},{:.2f})|".format(
         np.std(stds),
         norm.ppf(q=0.025, loc=np.mean(stds), scale=np.sqrt(np.std(stds))),
         norm.ppf(q=0.975, loc=np.mean(stds), scale=np.sqrt(np.std(stds)))))
+
+plt.clf()
+plt.hist(result)
